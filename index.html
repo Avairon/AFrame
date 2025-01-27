@@ -1,77 +1,77 @@
 <!DOCTYPE html> 
 <html lang="en"> 
 <head> 
-    <meta charset="UTF-8"> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>ultragame</title> 
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>Ultragame</title> 
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script> 
 </head> 
 <body> 
-    <a-scene> 
-        <a-sky color="#b6e5ff"></a-sky> 
-        <a-plane color="#7cc991" height="50" width="50" rotation="-90 0 0"></a-plane> 
-        <a-entity camera look-controls wasd-controls position="0 1.6 0"></a-entity> 
-        <a-entity cursor="rayOrigin: mouse"></a-entity> 
+  <a-scene> 
+    <a-sky color="#b6e5ff"></a-sky> 
+    <a-plane color="#7cc991" height="50" width="50" rotation="-90 0 0"></a-plane> 
  
-        <!-- Сферы --> 
-        <a-sphere collectible position="-9 1 17" radius="1" color="#4682B4"></a-sphere> 
-        <a-sphere collectible position="-15 1.42 -19" radius="1.42" color="#9400D3"></a-sphere> 
-        <a-sphere collectible position="3 1.33 9" radius="1.33" color="#FF00FF"></a-sphere> 
-		
-		<a-entity vive-controls="hand: right" id="rightHand" position="0 0 0">
-			<a-entity collider-check raycaster="objects: .collidable; showLine:true;" position="0 1 0"></a-entity>
-		</a-entity>
-		<a-entity vive-controls="hand: left" id="leftHand" position="0 0 0">
-			<a-entity collider-check raycaster="objects: .collidable; showLine:true;" position="0 1 0"></a-entity>
-		</a-entity>
-		
-        <!-- Счёт (увеличенный текст) --> 
-        <a-entity id="score" text="value: Score: 0; color: black; align: center; width: 5" position="0 2.5 -5"></a-entity> 
-    </a-scene> 
-</body> 
-<script> 
-    // Регистрация компонента "collectible" 
-    AFRAME.registerComponent('collider-check', {
-		dependencies: ['raycaster'],
-		
-        init: function () { 
-            this.el.addEventListener('raycaster-intersection', () => { 
-                // Удаляем сферу из сцены 
-                this.el.parentNode.removeChild(this.el); 
+    <!-- Камера с лучом --> 
+    <a-entity camera look-controls wasd-controls position="0 1.6 0"> 
+      <a-entity collider-check
+		position="0 1 1"
+        id="raycaster" 
+        raycaster="objects: .removable; showLine: true;" 
+        line="color: red; opacity: 1;"> 
+      </a-entity> 
+	  
+		<!-- Счёт --> 
+		<a-entity
+			position="0.2 0.7 -1"
+			id="score" 
+			text="value: Score: 0; color: black; align: center; width: 5;" > 
+		</a-entity> 
+    </a-entity> 
  
-                // Обновляем счёт 
-                let scoreEntity = document.querySelector('#score'); 
-                let currentScore = parseInt(scoreEntity.getAttribute('text').value.replace('Score: ', ''), 10); 
-                currentScore += 1; 
+    <!-- Сферы --> 
+    <a-sphere class="removable" position="-1 1 -3" radius="0.5" color="blue"></a-sphere> 
+    <a-sphere class="removable" position="1 1 -4" radius="0.5" color="green"></a-sphere> 
+    <a-sphere class="removable" position="0 0.5 -2" radius="0.5" color="yellow"></a-sphere> 
  
-                // Устанавливаем новое значение текста 
-                scoreEntity.setAttribute('text', 'value: Score: ' + currentScore + '; color: black; align: center; width: 5'); 
+    
+  </a-scene> 
+ 
+  <script> 
+    // Компонент для проверки пересечения и обработки удаления 
+    AFRAME.registerComponent('collider-check', { 
+      dependencies: ['raycaster'], 
+ 
+      init: function () { 
+        // Слушаем событие пересечения 
+        this.el.addEventListener('raycaster-intersection', (event) => { 
+			const intersectedEl = event.detail.el; // Получаем пересечённый объект 
+ 
+		if (intersectedEl && intersectedEl.classList.contains('removable')) { 
+            // Удаляем объект 
+			intersectedEl.parentNode.removeChild(intersectedEl); 
+ 
+            // Обновляем счёт 
+            const scoreEntity = document.querySelector('#score'); 
+            let currentScore = parseInt( 
+              scoreEntity.getAttribute('text').value.replace('Score: ', ''), 
+              10 
+            ); 
+            currentScore += 1; 
+ 
+            // Устанавливаем новое значение текста 
+            scoreEntity.setAttribute('text', { 
+              value: `Score: ${currentScore}`, 
+              color: 'black', 
+              align: 'center', 
+              width: 5, 
             }); 
-        } 
+          } 
+        }); 
+      }, 
     }); 
-</script> 
-<script>
-  const interactables = document.querySelectorAll('.interactive');
-
-      // Функция для привязки объекта к руке
-      function attachObject(hand, object) {
-        object.setAttribute('position', '0 0 -0.2'); // Позиция относительно контроллера
-        object.setAttribute('parent', hand); // Устанавливаем родителем контроллер
-      }
-
-      // Обработчик событий для активного объекта
-      function handleGrab(event) {
-        const intersectedObject = event.detail.intersections[0]?.object; // Получаем первый пересекающийся объект
-        if (intersectedObject) {
-          // Привязываем объект к руке
-          const hand = event.target; // Получаем контроллер
-          attachObject(hand, intersectedObject);
-        }
-      }
-
-      // Добавляем обработчики событий
-      interactables.forEach(object => {
-        object.addEventListener('click', handleGrab);
-      });
-</script>
+ 
+    // Привязка компонента к лучу 
+    document.querySelector('#raycaster').setAttribute('collider-check', ''); 
+  </script> 
+</body> 
 </html>
